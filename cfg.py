@@ -79,9 +79,8 @@ class CFG:
             newProductions = defaultdict(set)
             for k, v in self.productions.items():
                 for string in v:
-                    nonterminals = CFG.__splitIntoNonterminals__(string)
-                    # print(nonterminals)
-                    if len(nonterminals) <= 2:
+                    nonterminals = CFG.__splitIntoNonterminals__(string)                # splituiesc string-ul in neterminale
+                    if len(nonterminals) <= 2:                                          # daca sunt mai putin de 2 neterminale atunci le las asa
                         newProductions[k].add(string)
                         continue
                     ok = False
@@ -89,7 +88,25 @@ class CFG:
                     newProductions[k].add(f'{nonterminals[0]}{newNonterminal}')         # productia va deveni {primul neterminal}+{neterminalul nou 
                     newProductions[newNonterminal].add(''.join(nonterminals[1:]))       # care se va duce in restul de neterminale}
             self.productions = newProductions
+        ####################################################################################################################################
+        
+        # 4. elimin lambda-productiile
+
+        # mai intai caut lambda-neterminalele
+        nullables = set()
+        ok = False
+
+        while not ok:
+            ok = True
+            for k, v in self.productions.items():
+                for string in v:
+                    if string == '$' or all([(nonterminal in nullables) for nonterminal in CFG.__splitIntoNonterminals__(string)]):
+                        if k in nullables or k == self.start:
+                            continue
+                        nullables.add(k)
+                        ok = False
             
+        print(nullables)
 
 
 
@@ -101,7 +118,7 @@ class CFG:
                 print(key, '->', ' | '.join(val))
 
 d = CFG(['a', 'b'], ['T', 'S'], 'S')
-d.addProduction('S', ['Taaa', 'SS', 'SaSa', 'Tb'])
+d.addProduction('S', ['Taaa', 'SS', 'SaSa', 'TT'])
 d.addProduction('T', ['$', 'Tba'])
 d.print()
 d.convertToCNF()
