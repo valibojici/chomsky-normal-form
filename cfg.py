@@ -1,3 +1,4 @@
+from abc import abstractproperty
 from collections import defaultdict
 
 class CFG:
@@ -20,10 +21,20 @@ class CFG:
                 self.nonterminals.add(L)
                 return L
         for i in range(1,100):
-            L = letter + '_' + i
+            L = letter + '_' + str(i)
             if L not in self.nonterminals:
                 self.nonterminals.add(L)
-                return L        
+                return L    
+
+    @classmethod
+    def __splitIntoNonterminals__(cls, string):
+        result = []
+        for c in string:
+            if c == '_' or c.isnumeric():
+                result[-1] = result[-1] + c
+            else:
+                result.append(c)
+        return result
 
 
     def convertToCNF(self):
@@ -60,7 +71,27 @@ class CFG:
         self.productions = new_productions                              # la final updatez productiile
         ###############################################################################################################
 
-        3. 
+        # 3. elimin productiile in care apar mai mult de 2 neterminale
+        ok = False
+        
+        while not ok:
+            ok = True
+            newProductions = defaultdict(set)
+            for k, v in self.productions.items():
+                for string in v:
+                    nonterminals = CFG.__splitIntoNonterminals__(string)
+                    # print(nonterminals)
+                    if len(nonterminals) <= 2:
+                        newProductions[k].add(string)
+                        continue
+                    ok = False
+                    newNonterminal = self.__getUnusedNonterminal__(nonterminals[1][0])  # nonterminals[1] poate fi cv de genul A_23 si iau doar A-ul
+                    newProductions[k].add(f'{nonterminals[0]}{newNonterminal}')         # productia va deveni {primul neterminal}+{neterminalul nou 
+                    newProductions[newNonterminal].add(''.join(nonterminals[1:]))       # care se va duce in restul de neterminale}
+            self.productions = newProductions
+            
+
+
 
 
     def print(self, file=None):
