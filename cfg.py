@@ -1,5 +1,6 @@
 from abc import abstractproperty
 from collections import defaultdict
+import copy
 
 class CFG:
     def __init__(self, terminals = None, nonterminals = None, start = None):
@@ -55,7 +56,7 @@ class CFG:
                     if len(newString):
                         newProductions[k].add(''.join(newString))
             self.productions = newProductions
-            self.nonterminals = list(newProductions.keys())            # updatez si neterminalele pt ca s-ar putea sa fie sterse si alte neterminale daca in productii erau doar neterminale sterse
+            self.nonterminals = set(newProductions.keys())            # updatez si neterminalele pt ca s-ar putea sa fie sterse si alte neterminale daca in productii erau doar neterminale sterse
 
 
     def removeRedundantSymbols(self):
@@ -102,7 +103,7 @@ class CFG:
         self.removeDeletedNonterminals()
 
 
-    def convertToCNF(self):
+    def __convertToCNF__(self):
         self.removeRedundantSymbols()
 
         # 1. daca simbolul de start se afla intr-o productie adaug un nou simbol de start
@@ -195,20 +196,12 @@ class CFG:
         # elimin productiile de forma A -> $ 
         newProductions = {k : v.difference(['$']) for k,v in newProductions.items() if len(v.difference(['$'])) > 0}
 
-        # gasesc neterminalele care s-au sters
-        deletedNonterminals = set(self.nonterminals) - set(newProductions.keys())
+        # actualizez neterminalele si productiile
+        self.nonterminals = set(newProductions.keys())
+        self.productions = newProductions
 
-        # actualizez neterminalele
-        self.nonterminals = [x for x in self.productions.keys()]
-
-        # elimin neterminalele care s-au sters din toate productiile
-        self.productions = defaultdict(set)
-        for k, v in newProductions.items():
-            for string in v:
-                string = CFG.__splitIntoSymbols__(string)
-                string = [c for c in string if c not in deletedNonterminals] # daca am avut ceva de genul A -> BC si ambele sunt sterse nu mai adaug
-                if len(string) > 0:
-                    self.productions[k].add(''.join(string))
+        # sterg neterminalele eliminate (de genul A -> $) din productii 
+        self.removeDeletedNonterminals()
 
         #########################################################################################################################################################################
 
@@ -224,25 +217,33 @@ class CFG:
                     nonterminals = CFG.__splitIntoSymbols__(string)
                     if len(nonterminals) == 1 and nonterminals[0] in self.nonterminals:
                         ok = False
-                        if nonterminals[0] == k:
+                        if nonterminals[0] == k:    # daca e ceva de genul A -> A ignor
                             continue
                         newProductions[k].update(self.productions[nonterminals[0]])
                     else:
                         newProductions[k].add(string)
-
-            deletedNonterminals = set(self.nonterminals) - set(newProductions.keys())
-            self.nonterminals = [x for x in self.productions.keys()]
-            self.productions = defaultdict(set)
-            
-            for k, v in newProductions.items():
-                for string in v:
-                    string = CFG.__splitIntoSymbols__(string)
-                    string = [c for c in string if c not in deletedNonterminals] 
-                    if len(string) > 0:
-                        self.productions[k].add(''.join(string))
-
         
+            self.productions = newProductions
+            self.nonterminals = set(newProductions.keys())
+            self.removeDeletedNonterminals()
+        
+    def isCNF(self):
+        for k, v in self.productions.items():
+            for string in v:
+                string = CFG.__splitIntoSymbols__(string)
+                if len(string) != 2 and len(string) != 1: 
+                    return False
+                else:
+                    if len(string) == 1 and string[0] not in self.terminals:
+                        return False
+                    elif len(string) == 2 and (string[0] not in self.nonterminals or string[1] not in self.nonterminals):
+                        return False
+        return True
 
+    def convertToCNF(self):
+        while not self.isCNF():
+            self.removeRedundantSymbols()
+            self.__convertToCNF__()
 
     def print(self, file=None):
         if file == None:
@@ -252,12 +253,14 @@ class CFG:
 
 
 
-d = CFG(['a', 'b'], ['T', 'S', 'B', 'A', 'C'], 'S')
-d.addProduction('S', ['Taaa', 'SS', 'SaSa', 'T', 'a'])
-d.addProduction('T', ['a', 'BB'])
-d.addProduction('B', ['Ba'])
-d.addProduction('A', ['C'])
-d.addProduction('C', ['AA', 'B'])
-d.print()
-d.removeRedundantSymbols()
-d.print()
+# d = CFG(['a', 'b'], ['T', 'S', 'B', 'A', 'C'], 'S')
+# d.addProduction('S', ['Taaa', 'SS', 'SaSa', 'T', 'a'])
+# d.addProduction('T', ['a', 'BB'])
+# d.addProduction('B', ['Ba'])
+# d.addProduction('A', ['C'])
+# d.addProduction('C', ['AA', 'B'])
+# d.print()
+# c = copy.deepcopy(d)
+# d.convertToCNF()
+# d.print()
+# c.print()
