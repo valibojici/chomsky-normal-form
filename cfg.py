@@ -37,13 +37,17 @@ class CFG:
                 result.append(c)
         return result
 
-    def removeRedundantSymbols(self):
+    
+    def removeDeletedNonterminals(self):
+        # sterg neterminalele din productii daca acele neterminale nu mai exista (au fost sterse)
         ok = False
         while not ok:
             ok = True
             newProductions = defaultdict(set)
             for k, v in self.productions.items():
-                for string in v:
+                if k not in self.nonterminals:                          # daca neterminalul curent nu mai exista, nu mai conteaza de productii a avut
+                    continue
+                for string in v:                                        # iau fiecare productie si elimin de acolo daca exista neterminale sterse
                     string = CFG.__splitIntoSymbols__(string)
                     newString = [x for x in string if x in self.nonterminals or x in self.terminals]
                     if string != newString:
@@ -51,8 +55,13 @@ class CFG:
                     if len(newString):
                         newProductions[k].add(''.join(newString))
             self.productions = newProductions
-            self.nonterminals = list(newProductions.keys())
+            self.nonterminals = list(newProductions.keys())            # updatez si neterminalele pt ca s-ar putea sa fie sterse si alte neterminale daca in productii erau doar neterminale sterse
 
+
+    def removeRedundantSymbols(self):
+        self.removeDeletedNonterminals()        
+        
+        # sterg non-terminating symbols
         terminating = set()
         ok = False
         while not ok:
@@ -71,14 +80,31 @@ class CFG:
                         terminating.add(k)
                         ok = False
 
-        print(terminating)
+        self.nonterminals = terminating
 
+        self.removeDeletedNonterminals()    
 
+        # sterg unreachable symbols 
+        reachable = set(self.start)
+        stack = [self.start]
+        
+        while len(stack) > 0:       # fac un fel de DFS ca sa gasesc simbolurile accesibile plecand de la simbolul de start
+            top = stack[-1]
+            stack.pop()
+            for string in self.productions[top]:
+                symbols = [x for x in CFG.__splitIntoSymbols__(string) if x in self.nonterminals]
+                for s in symbols:
+                    if s not in reachable:
+                        reachable.add(s)
+                        stack.append(s)
 
-
+        self.nonterminals = reachable
+        self.removeDeletedNonterminals()
 
 
     def convertToCNF(self):
+        self.removeRedundantSymbols()
+
         # 1. daca simbolul de start se afla intr-o productie adaug un nou simbol de start
         found = any([self.start in string for strings in self.productions.values() for string in strings])
         if found:
@@ -114,7 +140,7 @@ class CFG:
 
         #########################################################################################################################################################################
 
-        # 3. elimin productiile in care apar mai mult de 2 neterminale
+        # 3. inlocuiesc productiile in care apar mai mult de 2 neterminale cu doar 2 neterminale
         ok = False
         
         while not ok:
@@ -226,10 +252,12 @@ class CFG:
 
 
 
-d = CFG(['a', 'b'], ['T', 'S', 'B'], 'S')
+d = CFG(['a', 'b'], ['T', 'S', 'B', 'A', 'C'], 'S')
 d.addProduction('S', ['Taaa', 'SS', 'SaSa', 'T', 'a'])
-d.addProduction('T', ['$'])
+d.addProduction('T', ['a', 'BB'])
 d.addProduction('B', ['Ba'])
+d.addProduction('A', ['C'])
+d.addProduction('C', ['AA', 'B'])
 d.print()
 d.removeRedundantSymbols()
 d.print()
