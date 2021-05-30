@@ -142,6 +142,8 @@ class CFG:
         #########################################################################################################################################################################
 
         # 3. inlocuiesc productiile in care apar mai mult de 2 neterminale cu doar 2 neterminale
+        
+        newNonterminals = set()
         ok = False
         
         while not ok:
@@ -149,15 +151,28 @@ class CFG:
             newProductions = defaultdict(set)
             for k, v in self.productions.items():
                 for string in v:
-                    nonterminals = CFG.__splitIntoSymbols__(string)                # splituiesc string-ul in neterminale
+                    nonterminals = CFG.__splitIntoSymbols__(string)                     # splituiesc string-ul in neterminale
                     if len(nonterminals) <= 2:                                          # daca sunt mai putin de 2 neterminale atunci le las asa
                         newProductions[k].add(string)
                         continue
                     ok = False
-                    newNonterminal = self.__getUnusedNonterminal__(nonterminals[1][0])  # nonterminals[1] poate fi cv de genul A_23 si iau doar A-ul
-                    newProductions[k].add(f'{nonterminals[0]}{newNonterminal}')         # productia va deveni {primul neterminal}+{neterminalul nou 
-                    newProductions[newNonterminal].add(''.join(nonterminals[1:]))       # care se va duce in restul de neterminale}
+
+                    newNonterminal = None                               
+                    for nonterminal in newNonterminals:                                 # verific sa nu existe un neterminal nou adaugat care sa faca acelasi lucru
+                        if ''.join(nonterminals[1:]) in newProductions[nonterminal]:
+                            newNonterminal = nonterminal
+                            break
+                
+                    if newNonterminal is None:                                          # daca nu mai exista alt neterminal atunci creez unul
+                        newNonterminal = self.__getUnusedNonterminal__(nonterminals[1][0])  # nonterminals[1] poate fi cv de genul A_23 si iau doar A-ul
+                        newNonterminals.add(newNonterminal)               
+                        self.nonterminals.add(newNonterminal)  
+
+                    newProductions[k].add(nonterminals[0] + newNonterminal)                 # productia va deveni {primul neterminal}+{neterminalul nou 
+                    newProductions[newNonterminal].add(''.join(nonterminals[1:]))           # care se va duce in restul de neterminale}
+            
             self.productions = newProductions
+            
 
         #########################################################################################################################################################################
         
@@ -248,8 +263,15 @@ class CFG:
     def print(self, file=None):
         if file == None:
             print(f'Start symbol: {self.start}')
-            for key, val in self.productions.items():
-                print(key, '->', ' | '.join(val))
+            print(self.start, '->', ' | '.join(self.productions[self.start]))
+            for key, val in sorted(self.productions.items(),key=lambda x : (-len(x[1]), list(x[1])[0] in self.terminals) ):
+                if key != self.start:
+                    print(key, '->', ' | '.join(val))
+        else:
+            with open(file, 'w') as f:
+                f.write(f'Start symbol: {self.start}\n')
+                for key, val in self.productions.items():
+                    f.write(str(key) + ' -> ' + ' | '.join(val) + '\n')
 
 
 
