@@ -1,13 +1,13 @@
 Start symbol: S_0
-S_0 -> c | AS | SA | CG | EF
-S -> c | AS | SA | CG | EF
-A -> CH | EI
-B -> c | DJ
-F -> SC
-G -> SE
-H -> BC
+S_0 -> AS | DF | SA | c | EG
+S -> AS | DF | SA | c | EG
+A -> DH | EI
+B -> c | CJ
+F -> SE
+G -> SD
+H -> BD
 I -> BE
-J -> BD
-C -> a
-E -> b
-D -> c
+J -> BC
+D -> b
+E -> a
+C -> c

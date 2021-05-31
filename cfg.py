@@ -14,6 +14,11 @@ class CFG:
         self.productions[symbol].update(string)
 
     def __getUnusedNonterminal__(self, letter):
+        # gasesc un neterminal nou, care nu exista
+        # incerc mai intai letter.upper(), ca sa aibe mai mult sens gen A -> a in loc de D -> a
+        # daca nu se poate iau alta litera din alfabet
+        # daca nici asa nu se poate iau pe rand fiecare litera si ii pun indici A_4 de exemplu
+
         if letter.upper() not in self.nonterminals:
             self.nonterminals.add(letter.upper())
             return letter.upper()
@@ -22,14 +27,20 @@ class CFG:
             if L not in self.nonterminals:
                 self.nonterminals.add(L)
                 return L
-        for i in range(1,100):
-            L = letter + '_' + str(i)
-            if L not in self.nonterminals:
-                self.nonterminals.add(L)
-                return L    
+
+        for i in range(0, 26):
+            letter = chr(ord('A') + i)
+            for j in range(1,10):
+                L = letter + '_' + str(j)
+                if L not in self.nonterminals:
+                    self.nonterminals.add(L)
+                    return L    
+
 
     @classmethod
     def __splitIntoSymbols__(cls, string):
+        # splituiesc string-ul in neterminale si terminale
+
         result = []
         for c in string:
             if c == '_' or c.isnumeric():
@@ -41,54 +52,62 @@ class CFG:
     
     def removeDeletedNonterminals(self):
         # sterg neterminalele din productii daca acele neterminale nu mai exista (au fost sterse)
+        # adica in productii apar neterminale care nu sunt in self.nonterminals
         ok = False
-        while not ok:
+        while not ok:                                                   # cat timp se sterg neterminale 
             ok = True
-            newProductions = defaultdict(set)
+            newProductions = defaultdict(set)                           # in newProductions pun simbolurile si productiile valide
             for k, v in self.productions.items():
-                if k not in self.nonterminals:                          # daca neterminalul curent nu mai exista, nu mai conteaza de productii a avut
+                if k not in self.nonterminals:                          # daca neterminalul curent nu mai exista, il elimin cu tot cu productiile lui
                     continue
                 for string in v:                                        # iau fiecare productie si elimin de acolo daca exista neterminale sterse
-                    string = CFG.__splitIntoSymbols__(string)
-                    newString = [x for x in string if x in self.nonterminals or x in self.terminals]
-                    if string != newString:
-                        ok = False
-                    if len(newString):
+                    string = CFG.__splitIntoSymbols__(string)                                               # splituiesc string in neterminale si terminale
+                    newString = [x for x in string if x in self.nonterminals or x in self.terminals]        # din string iau doar terminalele si neterminalele care exista
+                    if string != newString:                                                                 # daca string != newString inseamna ca in string apar neterminale sterse deci continui cu while-ul
+                        ok = False                                                                                  # s-ar putea sa am A -> B, sterg B si acum A -> '' deci trb sters si A
+                    if len(newString):                                                                      # daca mai am ceva in string dupa ce am eliminat neterminalele sterse
                         newProductions[k].add(''.join(newString))
             self.productions = newProductions
             self.nonterminals = set(newProductions.keys())            # updatez si neterminalele pt ca s-ar putea sa fie sterse si alte neterminale daca in productii erau doar neterminale sterse
 
 
     def removeRedundantSymbols(self):
-        self.removeDeletedNonterminals()        
-     
-        # sterg non-terminating symbols
+
+        # 1. sterg non-terminating symbols
+
+        # simbolul e terminating daca toate simbolurile dintr-o productie de a lui sunt terminating
+        # terminalele si $ sunt terminating
         terminating = set()
         ok = False
         while not ok:
             ok = True
             for k, v in self.productions.items():
-                if k in terminating:
+                if k in terminating:                                            # daca simbolul curent e terminating trec mai departe
                     continue
-                for string in v:
-                    symbols = CFG.__splitIntoSymbols__(string)
-                    isTerminating = True
-                    for s in symbols:
-                        if s not in terminating and s not in self.terminals:
+                for string in v:                                                # ma uit la fiecare prodcutie a simbolului
+                    symbols = CFG.__splitIntoSymbols__(string)                  # despart string-ul in simboluri (terminale si neterminale)
+                    isTerminating = True                                        # presupun ca simbolul (din stanga productiei) e terminating
+                    for s in symbols:                                           # verific daca toate simbolurile din string sunt terminating
+                        if s not in terminating and s not in self.terminals:    # daca simbolul nu e in terminating si nici nu e terminal atunci trebuie sa verific alta productie
                             isTerminating = False
                     
-                    if isTerminating:
+                    if isTerminating:                                           # daca am o productie in care toate simbolurile sunt 'terminating' atunci si simbolul din dreapta productiei e 'terminating'
                         terminating.add(k)
                         ok = False
 
         self.nonterminals = terminating
 
-        if self.start not in terminating:
+        # daca simbolul de start nu e 'terminating' nu este ok
+        if self.start not in terminating:                                   
             raise ValueError('Simbolul de start nu e terminating!')
 
+        # sterg simbolurile 'nonterminating'
         self.removeDeletedNonterminals()    
+        #############################################################################################################################################################################################################
+        
+        # 2. sterg unreachable symbols 
 
-        # sterg unreachable symbols 
+        # simbolul e 'reachable' daca pot sa ajung in el din simbolul de start
         reachable = set(self.start)
         stack = [self.start]
         
@@ -103,7 +122,8 @@ class CFG:
                         stack.append(s)
 
         self.nonterminals = reachable
- 
+
+        # sterg simbolurile unreachable
         self.removeDeletedNonterminals()
  
 
@@ -239,32 +259,36 @@ class CFG:
         while not ok:
             ok = True
             newProductions = defaultdict(set)
-            for k, v in self.productions.items():
+            for k, v in self.productions.items():                                           # iau fiecare productie pe rand
                 for string in v:
-                    nonterminals = CFG.__splitIntoSymbols__(string)
-                    if len(nonterminals) == 1 and nonterminals[0] in self.nonterminals:
+                    nonterminals = CFG.__splitIntoSymbols__(string)                         # splituiesc in neterminale (sau doar 1 terminal eventual)
+                    if len(nonterminals) == 1 and nonterminals[0] in self.nonterminals:     # daca am doar un neterminal atunci trebuie eliminat
                         ok = False
-                        if nonterminals[0] == k:    # daca e ceva de genul A -> A ignor
+                        if nonterminals[0] == k:                                            # daca e ceva de genul A -> A ignor
                             continue
-                        newProductions[k].update(self.productions[nonterminals[0]])
+                        newProductions[k].update(self.productions[nonterminals[0]])         # altfel la productiile simbolului curent adaug productiile celulalt simbol
                     else:
-                        newProductions[k].add(string)
+                        newProductions[k].add(string)                                       # daca NU am doar un neterminal (am 2) le las asa
         
             self.productions = newProductions
-            self.nonterminals = set(newProductions.keys())
+            self.nonterminals = set(newProductions.keys())                                  # updatez productiile, neterminalele si sterg neterminalele eliminate (gen A -> A, elimin A)
             self.removeDeletedNonterminals()
+
+        #########################################################################################################################################################################
+
         
 
     def isCNF(self):
+        # verific daca e in CNF
         for k, v in self.productions.items():
             for string in v:
                 string = CFG.__splitIntoSymbols__(string)
-                if len(string) != 2 and len(string) != 1: 
+                if len(string) != 2 and len(string) != 1:                       # daca productia nu are fix 2 sau 1 simboluri atunci nu e in CNF
                     return False
                 else:
-                    if len(string) == 1 and string[0] not in self.terminals:
+                    if len(string) == 1 and string[0] not in self.terminals:    # daca productia are 1 simbol si nu e terminal atunci nu e in CNF
                         return False
-                    elif len(string) == 2 and (string[0] not in self.nonterminals or string[1] not in self.nonterminals):
+                    elif len(string) == 2 and (string[0] not in self.nonterminals or string[1] not in self.nonterminals):   # daca productia are 2 simboluri si nu sunt neterminale atunci nu e in CNF
                         return False
         return True
 
@@ -307,17 +331,4 @@ class CFG:
                 for key, val in sorted(self.productions.items(),key=lambda x : (-len(x[1]), list(x[1])[0] in self.terminals) ):
                     if key != self.start:
                         f.write(str(key) + ' -> ' + ' | '.join(val) + '\n')
-
-
-
-# d = CFG(['a', 'b'], ['T', 'S', 'B', 'A', 'C'], 'S')
-# d.addProduction('S', ['Taaa', 'SS', 'SaSa', 'T', 'a'])
-# d.addProduction('T', ['a', 'BB'])
-# d.addProduction('B', ['Ba'])
-# d.addProduction('A', ['C'])
-# d.addProduction('C', ['AA', 'B'])
-# d.print()
-# c = copy.deepcopy(d)
-# d.convertToCNF()
-# d.print()
-# c.print()
+ 
