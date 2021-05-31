@@ -1,7 +1,4 @@
-import sys
 import cfg
-
-
 
 with open('input.txt', 'r') as f:
     lines = [x.strip() for x in f.readlines()]
@@ -18,10 +15,12 @@ with open('input.txt', 'r') as f:
 
         g.addProduction(symbol, strings)
 
+print('Input:')
 g.print()
-print()
 
+print('\nChomsky normal form: ')
 g.convertToCNF()
 
+
 g.print()
-# g.print('output.txt')
+g.print('output.txt')

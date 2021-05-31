@@ -275,24 +275,33 @@ class CFG:
                 self.removeRedundantSymbols()
                 self.__convertToCNF__()
             except ValueError:
+                self.start = None
+                self.productions.clear()
+                self.nonterminals.clear()
+                self.terminals.clear()
                 print('Simbolul de start nu e terminating!')
 
 
 
     def print(self, file=None):
-        if len(self.productions) == 0:
-            return
         if file == None:
             print(f'Start symbol: {self.start}')
+            if len(self.productions) == 0:
+                return
+            
             print(self.start, '->', ' | '.join(self.productions[self.start]))
-            # for key, val in sorted(self.productions.items(),key=lambda x : (-len(x[1]), list(x[1])[0] in self.terminals) ):
-            for key, val in self.productions.items():
+            
+            for key, val in sorted(self.productions.items(),key=lambda x : (-len(x[1]), list(x[1])[0] in self.terminals)):
                 if key != self.start:
                     print(key, '->', ' | '.join(val))
         else:
             with open(file, 'w') as f:
                 f.write(f'Start symbol: {self.start}\n')
+                if len(self.productions) == 0:
+                    return
+                
                 f.write(self.start + ' -> ' + ' | '.join(self.productions[self.start]) + '\n')
+                
                 for key, val in sorted(self.productions.items(),key=lambda x : (-len(x[1]), list(x[1])[0] in self.terminals) ):
                     if key != self.start:
                         f.write(str(key) + ' -> ' + ' | '.join(val) + '\n')

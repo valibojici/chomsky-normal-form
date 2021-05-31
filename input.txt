@@ -1,6 +1,6 @@
-a b
+a b c
 S A B 
 S 
-S = ASB | a
-A = aAS | a | $ 
-B = SbS | A | bb
+S = bSa | aSb | SA | AS | c
+A = aBa | bBb | $
+B = c | cBc
