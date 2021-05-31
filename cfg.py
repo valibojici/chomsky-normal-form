@@ -280,6 +280,8 @@ class CFG:
                 self.nonterminals.clear()
                 self.terminals.clear()
                 print('Simbolul de start nu e terminating!')
+                return False
+        return True
 
 
 
