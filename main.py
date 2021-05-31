@@ -24,4 +24,4 @@ print()
 g.convertToCNF()
 
 g.print()
-g.print('output.txt')
+# g.print('output.txt')

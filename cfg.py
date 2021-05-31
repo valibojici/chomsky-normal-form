@@ -61,7 +61,7 @@ class CFG:
 
     def removeRedundantSymbols(self):
         self.removeDeletedNonterminals()        
-        
+     
         # sterg non-terminating symbols
         terminating = set()
         ok = False
@@ -83,6 +83,9 @@ class CFG:
 
         self.nonterminals = terminating
 
+        if self.start not in terminating:
+            raise ValueError('Simbolul de start nu e terminating!')
+
         self.removeDeletedNonterminals()    
 
         # sterg unreachable symbols 
@@ -100,12 +103,13 @@ class CFG:
                         stack.append(s)
 
         self.nonterminals = reachable
+ 
         self.removeDeletedNonterminals()
-
+ 
 
     def __convertToCNF__(self):
         self.removeRedundantSymbols()
-
+ 
         # 1. daca simbolul de start se afla intr-o productie adaug un nou simbol de start
         found = any([self.start in string for strings in self.productions.values() for string in strings])
         if found:
@@ -119,10 +123,17 @@ class CFG:
 
         # pt fiecare terminal creez un neterminal care nu e folosit
         terminal_dict = defaultdict(str)
+ 
         for terminal in self.terminals:
-            terminal_dict[terminal] = self.__getUnusedNonterminal__(terminal)     
+            for k, v in self.productions.items():       # verific daca exista deja o productie in care apare doar neterminalul asta
+                if len(v) == 1 and terminal in v:
+                    terminal_dict[terminal] = k
+                    print(v)
+                    break
+            else:
+                terminal_dict[terminal] = self.__getUnusedNonterminal__(terminal)     
 
-
+         
         # iau toate productiile si inlocuiesc terminalele care apar cu neterminale
         new_productions = defaultdict(set)
         for key, val in self.productions.items():
@@ -140,16 +151,17 @@ class CFG:
         self.productions = new_productions                              # la final updatez productiile
 
         #########################################################################################################################################################################
-
+         
         # 3. inlocuiesc productiile in care apar mai mult de 2 neterminale cu doar 2 neterminale
         
-        newNonterminals = set()
+        newNonterminals = dict()
         ok = False
         
         while not ok:
             ok = True
             newProductions = defaultdict(set)
             for k, v in self.productions.items():
+                
                 for string in v:
                     nonterminals = CFG.__splitIntoSymbols__(string)                     # splituiesc string-ul in neterminale
                     if len(nonterminals) <= 2:                                          # daca sunt mai putin de 2 neterminale atunci le las asa
@@ -157,20 +169,20 @@ class CFG:
                         continue
                     ok = False
 
-                    newNonterminal = None                               
+                    newNonterminal = None
+                                                
                     for nonterminal in newNonterminals:                                 # verific sa nu existe un neterminal nou adaugat care sa faca acelasi lucru
-                        if ''.join(nonterminals[1:]) in newProductions[nonterminal]:
+                        if ''.join(nonterminals[1:]) == newNonterminals[nonterminal]:
                             newNonterminal = nonterminal
-                            break
-                
-                    if newNonterminal is None:                                          # daca nu mai exista alt neterminal atunci creez unul
-                        newNonterminal = self.__getUnusedNonterminal__(nonterminals[1][0])  # nonterminals[1] poate fi cv de genul A_23 si iau doar A-ul
-                        newNonterminals.add(newNonterminal)               
+ 
+                    if newNonterminal is None:                                                  # daca nu mai exista alt neterminal atunci creez unul
+                        newNonterminal = self.__getUnusedNonterminal__(nonterminals[1][0])      # nonterminals[1] poate fi cv de genul A_23 si iau doar A-ul
+                        newNonterminals[newNonterminal] = ''.join(nonterminals[1:])             # newNonterminal se duce in restul de neterminale (nonterminals[1:])
                         self.nonterminals.add(newNonterminal)  
+                        newProductions[newNonterminal].add(''.join(nonterminals[1:]))           # noul neterminal care se va duce in restul de neterminale
 
-                    newProductions[k].add(nonterminals[0] + newNonterminal)                 # productia va deveni {primul neterminal}+{neterminalul nou 
-                    newProductions[newNonterminal].add(''.join(nonterminals[1:]))           # care se va duce in restul de neterminale}
-            
+                    newProductions[k].add(nonterminals[0] + newNonterminal)                 # productia va deveni {primul neterminal}+{neterminalul nou}
+                    
             self.productions = newProductions
             
 
@@ -242,6 +254,7 @@ class CFG:
             self.nonterminals = set(newProductions.keys())
             self.removeDeletedNonterminals()
         
+
     def isCNF(self):
         for k, v in self.productions.items():
             for string in v:
@@ -255,23 +268,34 @@ class CFG:
                         return False
         return True
 
+
     def convertToCNF(self):
-        while not self.isCNF():
-            self.removeRedundantSymbols()
-            self.__convertToCNF__()
+        if not self.isCNF():
+            try:
+                self.removeRedundantSymbols()
+                self.__convertToCNF__()
+            except ValueError:
+                print('Simbolul de start nu e terminating!')
+
+
 
     def print(self, file=None):
+        if len(self.productions) == 0:
+            return
         if file == None:
             print(f'Start symbol: {self.start}')
             print(self.start, '->', ' | '.join(self.productions[self.start]))
-            for key, val in sorted(self.productions.items(),key=lambda x : (-len(x[1]), list(x[1])[0] in self.terminals) ):
+            # for key, val in sorted(self.productions.items(),key=lambda x : (-len(x[1]), list(x[1])[0] in self.terminals) ):
+            for key, val in self.productions.items():
                 if key != self.start:
                     print(key, '->', ' | '.join(val))
         else:
             with open(file, 'w') as f:
                 f.write(f'Start symbol: {self.start}\n')
-                for key, val in self.productions.items():
-                    f.write(str(key) + ' -> ' + ' | '.join(val) + '\n')
+                f.write(self.start + ' -> ' + ' | '.join(self.productions[self.start]) + '\n')
+                for key, val in sorted(self.productions.items(),key=lambda x : (-len(x[1]), list(x[1])[0] in self.terminals) ):
+                    if key != self.start:
+                        f.write(str(key) + ' -> ' + ' | '.join(val) + '\n')
 
 
 

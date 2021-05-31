@@ -1,8 +1,2 @@
 Start symbol: S
-A -> a
-B -> b
-S -> AD
-D -> BX | XE | b
-E -> BX | b
-X -> AY | BY | a | b
-Y -> c | AY | BY | b | a
+S -> 
