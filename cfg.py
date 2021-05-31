@@ -172,7 +172,7 @@ class CFG:
                     newNonterminal = None
                                                 
                     for nonterminal in newNonterminals:                                 # verific sa nu existe un neterminal nou adaugat care sa faca acelasi lucru
-                        if ''.join(nonterminals[1:]) == newNonterminals[nonterminal]:
+                        if ''.join(nonterminals[1:]) == newNonterminals.get(nonterminal):
                             newNonterminal = nonterminal
  
                     if newNonterminal is None:                                                  # daca nu mai exista alt neterminal atunci creez unul
