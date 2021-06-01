@@ -1,6 +1,7 @@
-a b c
-S A B 
+a b c d
+S A B C
 S 
-S = bSa | aSb | SA | AS | c
-A = aBa | bBb | $
-B = c | cBc
+S = AaA | aSd | abcdSbbccdd | AC
+A = C | a | $
+B = BabBbB | $
+C = Cc | c
