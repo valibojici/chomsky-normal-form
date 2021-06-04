@@ -1,6 +1,7 @@
 # chomsky-normal-form / forma-normala-chomsky
 Aducerea unei gramatici independente de context in forma normala chomsky.
-Fiecare terminal si neterminal trebuie sa fie o singura litera fara numere sau '_'
+Fiecare terminal si neterminal trebuie sa fie o singura litera fara numere sau '_'.
+
 Fisierul de input trebuie sa aibe forma:
 
 ``` 
