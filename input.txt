@@ -1,7 +1,4 @@
-a b c d
-S A B C
-S 
-S = AaA | aSd | abcdSbbccdd | AC
-A = C | a | $
-B = BabBbB | $
-C = Cc | c
+a b
+S
+S
+S = aSb | $
