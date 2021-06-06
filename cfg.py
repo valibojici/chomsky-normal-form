@@ -147,7 +147,6 @@ class CFG:
             for k, v in self.productions.items():       # verific daca exista deja o productie in care apare doar neterminalul asta
                 if len(v) == 1 and terminal in v:
                     terminal_dict[terminal] = k
-                    print(v)
                     break
             else:
                 terminal_dict[terminal] = self.__getUnusedNonterminal__(terminal)     
