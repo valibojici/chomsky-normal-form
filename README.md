@@ -12,6 +12,8 @@ Fisierul de input trebuie sa aibe forma:
 ```
 <hr>
 
+Se ruleaza cu `python cfg.py`
+
 Exemplu input.txt:
 ```
 a b c
@@ -22,7 +24,7 @@ A = aBa | bBb | $
 B = c | cBc
 ```
 
-output.txt
+output.txt ( nu este unic )
 ```
 Start symbol: S_0
 S_0 -> c | AS | SA | CG | EF
