@@ -1,4 +1,6 @@
-a b
+a b c
+S A B
 S
-S
-S = aSb | $
+S = bSa | aSb | SA | AS | c
+A = aBa | bBb | $
+B = c | cBc
