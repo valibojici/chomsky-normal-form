@@ -12,6 +12,8 @@ Fisierul de input trebuie sa aibe forma:
 ```
 <hr>
 
+Se ruleaza cu `python cfg.py`
+
 Exemplu input.txt:
 ```
 a b c
