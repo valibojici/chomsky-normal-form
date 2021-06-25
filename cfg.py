@@ -125,8 +125,19 @@ class CFG:
         # sterg simbolurile unreachable
         self.removeDeletedNonterminals()
  
+    def __replaceSymbol__(self, old, new):
+        newProductions = defaultdict(set)
+        for k,v in self.productions.items():
+            for string in v:
+                string = string.replace(old, new)
+                newProductions[k].add(string)
+
+        self.nonterminals.remove(old)
+        self.productions = newProductions
+        self.removeDeletedNonterminals()
 
     def __convertToCNF__(self):
+
         self.removeRedundantSymbols()
  
         # 1. daca simbolul de start se afla intr-o productie adaug un nou simbol de start
@@ -215,7 +226,7 @@ class CFG:
         while not ok:
             ok = True
             for k, v in self.productions.items():
-                if k in nullables or k == self.start:
+                if k in nullables:
                     continue
                 for string in v:
                     if string == '$' or all([nonterminal in nullables for nonterminal in CFG.__splitIntoSymbols__(string)]):
@@ -244,6 +255,10 @@ class CFG:
         # actualizez neterminalele si productiile
         self.nonterminals = set(newProductions.keys())
         self.productions = newProductions
+
+        # daca simbolul de start era lambda neterminal atunci adaug productia S -> $
+        if self.start in nullables:
+            self.productions[self.start].add('$')
 
         # sterg neterminalele eliminate (de genul A -> $) din productii 
         self.removeDeletedNonterminals()
@@ -294,8 +309,9 @@ class CFG:
     def convertToCNF(self):
         if not self.isCNF():
             try:
-                self.removeRedundantSymbols()
-                self.__convertToCNF__()
+                while not self.isCNF():
+                    self.__convertToCNF__()
+                    self.print()
             except ValueError:
                 self.start = None
                 self.productions.clear()
@@ -303,6 +319,27 @@ class CFG:
                 self.terminals.clear()
                 print('Simbolul de start nu e terminating!')
                 return False
+
+
+        # iau toate neterminalele si verific dau au productii identice ca se le elimin
+        ok = False
+        while not ok:
+            ok = True
+            for k1 in self.productions.keys():
+                if k1 == self.start: 
+                    continue
+                for k2 in self.productions.keys():
+                    if k2 == self.start:
+                        continue
+                    if k1 != k2 and self.productions[k1] == self.productions[k2]:
+                        self.__replaceSymbol__(k1, k2)
+                        ok = False
+                        break
+                if not ok: 
+                    break
+
+
+
         return True
 
 
