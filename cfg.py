@@ -311,7 +311,6 @@ class CFG:
             try:
                 while not self.isCNF():
                     self.__convertToCNF__()
-                    self.print()
             except ValueError:
                 self.start = None
                 self.productions.clear()
